@@ -1,4 +1,4 @@
-import pool from "../database/db";
+import pool from "../database/db.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
@@ -68,6 +68,52 @@ export async function registerUser(req, res, next){
     }
 }
 
-export async function login(req, res, next){
-    //...
+export async function loginUser(req, res, next){
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password){
+            return res.status(400).json({ error: "Email and password are required" });
+        }
+
+        // User verification
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(email)){
+            return res.status(400).json({ error: "Invalid email format" });
+        }
+
+        const userExists = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+
+        if (userExists.rows.length === 0){
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        const user = userExists.rows[0];
+
+        // Password verification 
+        const match = await bcrypt.compare(password, user.password);
+
+        if (!match){
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        // JWT token
+        const token = jwt.sign(
+            { id: user.id, role: user.role},
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN }
+        );
+
+        res.status(200).json({ 
+            message: "Login successful", 
+            token, user: { 
+                id: user.id, 
+                email: user.email,
+                name: user.name
+             }
+        });
+    } catch (err){
+        next(err);
+    }
 };
