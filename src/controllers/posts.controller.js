@@ -13,13 +13,13 @@ export async function createPost(req, res, next) {
             return res.status(400).json({ error: "Title must be between 3 and 120 characters"});
         }
 
-        if (content.trim().length < 5) {
-            return res.status(400).json({ error: "Content must be at least 5 characters long" });
+        if (content.trim().length < 10) {
+            return res.status(400).json({ error: "Content must be at least 10 characters long" });
         }
 
         const userSelection = await pool.query("SELECT name FROM users WHERE id = $1", [userId]);
 
-        if (userSelection.rows.length < 0){
+        if (userSelection.rows.length === 0){
             return res.status(404).json({ error: "User not found" });
         }
 
