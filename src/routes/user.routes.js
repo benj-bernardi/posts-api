@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { registerUser, loginUser, getMe } from "../controllers/user.controller.js";
-import { createPost, updatePost, deletePost } from "../controllers/posts.controller.js";
+import { getPosts, createPost, updatePost, deletePost,  } from "../controllers/posts.controller.js";
 import { authMiddleware } from  "../middlewares/authMiddleware.js";
 
 const router = Router();
@@ -11,6 +11,7 @@ router.post("/register", registerUser);
 router.post("/login", loginUser);
 
 // Posts Routes
+router.get("/posts", authMiddleware, getPosts )
 router.post("/posts", authMiddleware, createPost);
 router.patch("/posts/:id", authMiddleware, updatePost);
 router.delete("/posts/:id", authMiddleware, deletePost);

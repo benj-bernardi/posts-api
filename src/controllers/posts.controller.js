@@ -1,5 +1,25 @@
 import pool from "../database/db.js";
 
+export async function getPosts(req, res, next){
+    try {
+        const getAllPosts = await pool.query(
+            `SELECT 
+                u.name, 
+                p.id, 
+                p.title, 
+                p.content,
+                p.created_at,
+                p.updated_at 
+            FROM posts p JOIN users u ON u.id = p.user_id
+            ORDER BY p.created_at DESC`
+        );
+
+        res.status(200).json(getAllPosts.rows)
+    } catch (err){
+        next(err);
+    }
+}
+
 export async function createPost(req, res, next) {
     try {
         const { title, content } = req.body;
