@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { findUserById } from "../services/user.service.js"; // ajusta o caminho
+import { findUserById } from "../models/user.models.js";
 
 export async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
