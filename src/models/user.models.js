@@ -1,6 +1,5 @@
 import pool from "../database/db.js";
 
-// FIND / GET
 export async function findUserById(userId) {
   const result = await pool.query(
     "SELECT id, name, email, role, created_at FROM users WHERE id = $1",
@@ -37,7 +36,7 @@ export async function findUserPassword(userId) {
   return result.rows[0] ?? null;
 }
 
-// CREATE
+
 export async function createUser(name, email, hashedPassword) {
   const result = await pool.query(
     `INSERT INTO users (name, email, password)
@@ -49,8 +48,6 @@ export async function createUser(name, email, hashedPassword) {
   return result.rows[0];
 }
 
-
-// UPDATE
 export async function findEmailForUpdate(email, userId) {
   const result = await pool.query(
     "SELECT id FROM users WHERE email = $1 AND id != $2",
@@ -77,14 +74,13 @@ export async function updateUserById(name, email, hashedPassword, userId) {
          password = COALESCE($3, password),
          updated_at = NOW()
      WHERE id = $4
-     RETURNING id`,
+     RETURNING id, name, email`,
     [name ?? null, email ?? null, hashedPassword ?? null, userId]
   );
 
   return result.rows[0] ?? null;
 }
 
-// DELETE
 export async function deleteUserById(userId) {
   const result = await pool.query(
     "DELETE FROM users WHERE id = $1 RETURNING id",

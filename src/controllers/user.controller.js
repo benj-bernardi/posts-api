@@ -1,207 +1,165 @@
-import pool from "../database/db.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-export async function getMe(req, res, next){
-    try {
-        const userId = req.user.id;
+import {
+  findUserById,
+  findUserByEmail,
+  findUserByName,
+  createUser,
+  findEmailForUpdate,
+  findNameForUpdate,
+  findUserPassword,
+  updateUserById
+} from "../models/user.model.js";
 
-        const result = await pool.query("SELECT id, email, created_at, name FROM users WHERE id = $1", [userId]);
-        
-         if (result.rows.length === 0){
-            return res.status(404).json({ error: "User not found" });
-        }
+export async function getMe(req, res, next) {
+  try {
+    const user = await findUserById(req.user.id);
 
-        res.json(result.rows[0]);
-    } catch (err){
-        next(err);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
+
+    res.json(user);
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function registerUser(req, res, next){
-    try {
-        const { name, email, password } = req.body;
+export async function registerUser(req, res, next) {
+  try {
+    const { name, email, password } = req.body;
 
-        if (!name || !email || !password){
-            return res.status(400).json({ error: "Name, email and password are required" });
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-        const nameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-
-        // Email verification 
-        if (!emailRegex.test(email)){
-            return res.status(400).json({ error: "Invalid email format" });
-        };
-
-        // Name verification
-        if (!nameRegex.test(name)){
-            return res.status(400).json(
-                { error: "Username must be 3-20 characters long and contain only letters, numbers, or underscores." });
-        };
-
-        // Password verification 
-        if (!passwordRegex.test(password)){
-            return res.status(400).json(
-                { error: "Password must be at least 8 characters long and contain at least one uppercase letter and one number" });
-        };
-
-        // User verification 
-        const userExists = await pool.query("SELECT 1 FROM users WHERE email = $1", [email]);
-
-        if (userExists.rows.length > 0){
-            return res.status(409).json({ error: "Email already registred" });
-        }
-    
-        const nameExists = await pool.query("SELECT 1 FROM users WHERE name = $1", [name]);
-
-        if (nameExists.rows.length > 0){
-            return res.status(409).json({ error: "Name already registred" });
-        }
-        
-        // Hash of the password 
-        const saltRounds = 12;
-
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-        const result = await pool.query(
-        "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, role",
-        [name, email, hashedPassword]);
-        
-        const user = result.rows[0];
-        
-        // JWT token 
-        const token = jwt.sign(
-            { id: user.id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN}
-        );
-
-        res.status(201).json({ message: "Registred successful", token });
-    } catch (err){
-        next(err);
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "Name, email and password are required" });
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    const nameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    if (!nameRegex.test(name)) {
+      return res.status(400).json({ error: "Invalid username format" });
+    }
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ error: "Weak password" });
+    }
+
+    if (await findUserByEmail(email)) {
+      return res.status(409).json({ error: "Email already registered" });
+    }
+
+    if (await findUserByName(name)) {
+      return res.status(409).json({ error: "Name already registered" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const user = await createUser(name, email, hashedPassword);
+
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
+
+    res.status(201).json({ message: "Registered successfully", token });
+
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function loginUser(req, res, next){
-    try {
-        const { email, password } = req.body;
+export async function loginUser(req, res, next) {
+  try {
+    const { email, password } = req.body;
 
-        if (!email || !password){
-            return res.status(400).json({ error: "Email and password are required" });
-        }
-
-        // User verification
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailRegex.test(email)){
-            return res.status(400).json({ error: "Invalid email format" });
-        }
-
-        const userExists = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-
-        if (userExists.rows.length === 0){
-            return res.status(401).json({ error: "Invalid credentials" });
-        }
-
-        const user = userExists.rows[0];
-
-        // Password verification 
-        const match = await bcrypt.compare(password, user.password);
-
-        if (!match){
-            return res.status(401).json({ error: "Invalid credentials" });
-        }
-
-        // JWT token
-        const token = jwt.sign(
-            { id: user.id, role: user.role},
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN }
-        );
-
-        res.status(200).json({ 
-            message: "Login successful", 
-            token, user: { 
-                id: user.id, 
-                email: user.email,
-                name: user.name
-             }
-        });
-    } catch (err){
-        next(err);
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
     }
-};
 
-export async function updateUser(req, res, next){
-    try {
-        const { name, email, password } = req.body;
-        const user_id = req.user.id;
+    const user = await findUserByEmail(email);
 
-        if (name  === undefined && email === undefined && password === undefined){
-            return res.status(400).json({ error: "Nothing to update" });
-        }
-
-        const nameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-
-        if (name !== undefined){
-            const nameExists = await pool.query("SELECT 1 FROM users WHERE name = $1 and id != $2", [name, user_id]);
-
-            if (!nameRegex.test(name)){
-                return res.status(400).json({ 
-                    error: "Username must be 3-20 characters long and contain only letters, numbers, or underscores." });
-            }
-            
-            if (nameExists.rows.length > 0){
-                return res.status(400).json({ error: "Name already registred" });
-            }
-        }
-
-        if (email !== undefined){
-            const userExists = await pool.query("SELECT 1 FROM users WHERE email = $1 and id != $2", [email, user_id]);
-
-            if (!emailRegex.test(email)){
-                return res.status(400).json({ error: "Invalid email format" });
-            }
-
-            if (userExists.rows.length > 0){
-                return res.status(400).json({ error: "Invalid credentials" });
-            }
-        }
-
-        let hashedPassword;
-
-        if (password !== undefined){
-            const userPassword = await pool.query("SELECT password FROM users WHERE id = $1", [user_id]);
-            const hashedPasswordFromDB = userPassword.rows[0].password;
-
-            const match = await bcrypt.compare(password, hashedPasswordFromDB);
-
-            if (!passwordRegex.test(password)){
-                return res.status(400).json({ 
-                    error: "Password must be at least 8 characters long and contain at least one uppercase letter and one number" });
-            }
-
-            if (match){
-                return res.status(400).json({ error: "The password must be different from the current one" });
-            }
-            
-            const hashedPassword = await bcrypt.hash(password, 12);
-        }
-
-        const updateUser = await pool.query(
-            `UPDATE users 
-                SET name = COALESCE($1, name), 
-                email = COALESCE($2, email), 
-                password = COALESCE($3, password) 
-                WHERE id = $4`,
-                [name, email, hashedPassword, user_id]);
-    
-        res.status(204).send();
-    } catch (err){
-        next(err);
+    if (!user) {
+      return res.status(401).json({ error: "Invalid credentials" });
     }
+
+    const match = await bcrypt.compare(password, user.password);
+
+    if (!match) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
+
+    res.json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      }
+    });
+
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateUser(req, res, next) {
+  try {
+    const { name, email, password } = req.body;
+    const userId = req.user.id;
+
+    if (name === undefined && email === undefined && password === undefined) {
+      return res.status(400).json({ error: "Nothing to update" });
+    }
+
+    let hashedPassword;
+
+    if (name !== undefined) {
+      if (await findNameForUpdate(name, userId)) {
+        return res.status(400).json({ error: "Name already exists" });
+      }
+    }
+
+    if (email !== undefined) {
+      if (await findEmailForUpdate(email, userId)) {
+        return res.status(400).json({ error: "Email already exists" });
+      }
+    }
+
+    if (password !== undefined) {
+      const current = await findUserPassword(userId);
+
+      const match = await bcrypt.compare(password, current.password);
+
+      if (match) {
+        return res.status(400).json({ error: "Password must be different" });
+      }
+
+      hashedPassword = await bcrypt.hash(password, 12);
+    }
+
+    const updated = await updateUserById(name, email, hashedPassword, userId);
+
+    if (!updated) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(204).send();
+
+  } catch (err) {
+    next(err);
+  }
 }
