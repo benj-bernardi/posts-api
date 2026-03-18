@@ -1,21 +1,11 @@
-import pool from "../database/db.js";
+import { getAllPosts, createPostDB, updatePostDB, deletePostDB } from "../models/post.model.js";
+import { findUserById } from "../models/user.models.js";
 
-export async function getPosts(req, res, next){
+export async function getPosts(req, res, next) {
     try {
-        const getAllPosts = await pool.query(
-            `SELECT 
-                u.name, 
-                p.id, 
-                p.title, 
-                p.content,
-                p.created_at,
-                p.updated_at 
-            FROM posts p JOIN users u ON u.id = p.user_id
-            ORDER BY p.created_at DESC`
-        );
-
-        res.status(200).json(getAllPosts.rows)
-    } catch (err){
+        const posts = await getAllPosts();
+        res.status(200).json(posts);
+    } catch (err) {
         next(err);
     }
 }
@@ -25,95 +15,91 @@ export async function createPost(req, res, next) {
         const { title, content } = req.body;
         const userId = req.user.id;
 
-        if (!title || !content){
+        if (!title || !content) {
             return res.status(400).json({ error: "Title and content are required" });
         }
 
-        if (title.trim().length < 3 || title.trim().length > 120){
-            return res.status(400).json({ error: "Title must be between 3 and 120 characters"});
+        if (title.trim().length < 3 || title.trim().length > 120) {
+            return res.status(400).json({ error: "Title must be between 3 and 120 characters" });
         }
 
         if (content.trim().length < 10) {
             return res.status(400).json({ error: "Content must be at least 10 characters long" });
         }
 
-        const userSelection = await pool.query("SELECT name FROM users WHERE id = $1", [userId]);
+        const userResult = await findUserById(userId);
 
-        if (userSelection.rows.length === 0){
+        if (!userResult) {
             return res.status(404).json({ error: "User not found" });
         }
 
-        const user = userSelection.rows[0];
+        const user = userResult.rows[0];
 
-        const result = await pool.query(
-            "INSERT INTO posts (title, content, user_id) VALUES ($1, $2, $3) RETURNING title, content, user_id, created_at",
-            [title, content, userId]);
-        
-        const newPost = result.rows[0]; 
+        const newPost = await createPostDB(title, content, userId);
 
         res.status(201).json({
-            message: "Post created successfuly", 
+            message: "Post created successfully",
             post: {
+                id: newPost.id,
                 user_id: userId,
                 name: user.name,
                 title: newPost.title,
-                content: newPost.content
+                content: newPost.content,
+                created_at: newPost.created_at
             }
         });
-    } catch (err){
+    } catch (err) {
         next(err);
     }
 }
 
-export async function updatePost(req, res, next){
+export async function updatePost(req, res, next) {
     try {
         const { id } = req.params;
         const { title, content } = req.body;
         const user_id = req.user.id;
 
-        if (title === undefined && content === undefined){
+        if (title === undefined && content === undefined) {
             return res.status(400).json({ error: "Nothing to update" });
         }
 
-        if (title != undefined){
-            if (title.trim().length < 3 || title.trim().length > 120){
+        if (title !== undefined) {
+            if (title.trim().length < 3 || title.trim().length > 120) {
                 return res.status(400).json({ error: "Title must be between 3 and 120 characters" });
             }
         }
-        
-        if (content != undefined){
-            if (content.trim().length < 10){
+
+        if (content !== undefined) {
+            if (content.trim().length < 10) {
                 return res.status(400).json({ error: "Content must be at least 10 characters long" });
             }
         }
 
-        const updatePost = await pool.query(     
-        "UPDATE posts SET title = COALESCE($1, title), content = COALESCE($2, content) WHERE id = $3 AND user_id = $4 RETURNING *",
-        [title, content, id, user_id]);
+        const updated = await updatePostDB(title, content, id, user_id);
 
-        if (updatePost.rows.length === 0){
+        if (!updated) {
             return res.status(404).json({ error: "Post not found" });
         }
 
         res.status(204).send();
-    } catch (err){
+    } catch (err) {
         next(err);
     }
 }
 
-export async function deletePost(req, res, next){
+export async function deletePost(req, res, next) {
     try {
         const { id } = req.params;
         const user_id = req.user.id;
 
-        const deletePost = await pool.query("DELETE FROM posts WHERE id = $1 AND user_id = $2 RETURNING id", [id, user_id]);
+        const deleted = await deletePostDB(id, user_id);
 
-        if (deletePost.rows.length === 0){
+        if (!deleted) {
             return res.status(404).json({ error: "Post not found or not authorized" });
         }
 
         res.status(204).send();
-    } catch (err){
+    } catch (err) {
         next(err);
     }
 }
