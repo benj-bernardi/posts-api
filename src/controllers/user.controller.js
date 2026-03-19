@@ -10,7 +10,7 @@ import {
   findNameForUpdate,
   findUserPassword,
   updateUserById
-} from "../models/user.model.js";
+} from "../models/user.models.js";
 
 export async function getMe(req, res, next) {
   try {

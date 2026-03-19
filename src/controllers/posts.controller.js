@@ -1,4 +1,4 @@
-import { getAllPosts, createPostDB, updatePostDB, deletePostDB } from "../models/post.model.js";
+import { getAllPosts, createPostDB, updatePostDB, deletePostDB } from "../models/post.models.js";
 import { findUserById } from "../models/user.models.js";
 
 export async function getPosts(req, res, next) {
@@ -79,6 +79,10 @@ export async function updatePost(req, res, next) {
 
         if (!updated) {
             return res.status(404).json({ error: "Post not found" });
+        }
+
+        if (Date.now() - new Date(post.created_at) > 15 * 60 * 1000) {
+            return res.status(403).json({ error: "Edit time expired" });
         }
 
         res.status(204).send();
