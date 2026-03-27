@@ -1,3 +1,5 @@
+import pool from "../database/db";
+
 export async function createComment(req, res, next){
     try {
         const { content } = req.body;
@@ -34,6 +36,23 @@ export async function createComment(req, res, next){
             comment: result.rows[0]
         });
     } catch(err){
+        next(err);
+    }
+}
+
+export async function deleteComment(req, res, next){
+    try {
+        const user_id = req.user.id;
+        const { id } = req.params;
+
+        const deleteUserComment = await pool.query("DELETE FROM comments WHERE id = $1 AND user_id = $2 RETURNING id", [id, user_id]);
+
+        if (deleteUserComment.rows.length === 0){
+            return res.status(404).json({ error: "Comment not found or not authorized" });
+        }
+
+        res.status(204);
+    } catch (err){
         next(err);
     }
 }
