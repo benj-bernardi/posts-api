@@ -110,7 +110,6 @@ export async function loginUser(req, res, next) {
         email: user.email
       }
     });
-
   } catch (err) {
     next(err);
   }
@@ -158,7 +157,6 @@ export async function updateUser(req, res, next) {
     }
 
     res.status(204).send();
-
   } catch (err) {
     next(err);
   }

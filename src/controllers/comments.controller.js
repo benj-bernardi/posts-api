@@ -1,11 +1,11 @@
-import pool from "../database/db";
+import { createCommentDB, findPostById, deleteCommentDB } from "../models/commentModel.js";
 
 export async function createComment(req, res, next){
     try {
         const { content } = req.body;
         const { id } = req.params;
         const userId = req.user.id;
-        
+
         if (!content){
             return res.status(400).json({ error: "Content is required"});
         }
@@ -16,24 +16,17 @@ export async function createComment(req, res, next){
             return res.status(400).json({ error: "Content must be between 3 and 60 characters"});
         }
 
-        const postExists = await pool.query(
-            "SELECT 1 FROM posts WHERE id = $1",
-            [id]
-        );
+        const postExists = await findPostById(id);
 
-        if (postExists.rows.length === 0){
+        if (!postExists){
             return res.status(404).json({ error: "Post not found" });
         }
 
-        const result = await pool.query(`
-            INSERT INTO comments (content, post_id, user_id)
-            VALUES ($1, $2, $3)
-            RETURNING id, content, post_id, user_id, created_at
-        `, [trimmed, id, userId]);
+        const comment = await createCommentDB(trimmed, id, userId);
 
         res.status(201).json({
             message: "Comment created successfully",
-            comment: result.rows[0]
+            comment
         });
     } catch(err){
         next(err);
@@ -42,16 +35,16 @@ export async function createComment(req, res, next){
 
 export async function deleteComment(req, res, next){
     try {
-        const user_id = req.user.id;
+        const userId = req.user.id;
         const { id } = req.params;
 
-        const deleteUserComment = await pool.query("DELETE FROM comments WHERE id = $1 AND user_id = $2 RETURNING id", [id, user_id]);
+        const deleted = await deleteCommentDB(id, userId);
 
-        if (deleteUserComment.rows.length === 0){
+        if (!deleted){
             return res.status(404).json({ error: "Comment not found or not authorized" });
         }
 
-        res.status(204);
+        res.status(204).send();
     } catch (err){
         next(err);
     }
