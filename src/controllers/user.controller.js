@@ -1,5 +1,5 @@
-import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import { accessToken, refreshToken } from "../utils/generateToken.js";
 
 import {
   findUserById,
@@ -9,8 +9,10 @@ import {
   findEmailForUpdate,
   findNameForUpdate,
   findUserPassword,
-  updateUserById
+  updateUserById,
+  createRefreshToken
 } from "../models/user.models.js";
+import pool from "../database/db.js";
 
 export async function getMe(req, res, next) {
   try {
@@ -62,14 +64,7 @@ export async function registerUser(req, res, next) {
 
     const user = await createUser(name, email, hashedPassword);
 
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
-    );
-
-    res.status(201).json({ message: "Registered successfully", token });
-
+    res.status(201).json({ message: "Registered successfully" });
   } catch (err) {
     next(err);
   }
@@ -95,68 +90,26 @@ export async function loginUser(req, res, next) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+    const accessTkn = accessToken({ id: user.id });
+
+    const refreshTkn = refreshToken({ id: user.id });
+
+    await createRefreshToken(
+      user.id,
+      refreshTkn,
+      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     );
 
     res.json({
       message: "Login successful",
-      token,
+      accessTkn,
+      refreshTkn, 
       user: {
         id: user.id,
         name: user.name,
         email: user.email
       }
     });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function updateUser(req, res, next) {
-  try {
-    const { name, email, password } = req.body;
-    const userId = req.user.id;
-
-    if (name === undefined && email === undefined && password === undefined) {
-      return res.status(400).json({ error: "Nothing to update" });
-    }
-
-    let hashedPassword;
-
-    if (name !== undefined) {
-      if (await findNameForUpdate(name, userId)) {
-        return res.status(400).json({ error: "Name already exists" });
-      }
-    }
-
-    if (email !== undefined) {
-      if (await findEmailForUpdate(email, userId)) {
-        return res.status(400).json({ error: "Email already exists" });
-      }
-    }
-
-    if (password !== undefined) {
-      const current = await findUserPassword(userId);
-
-      const match = await bcrypt.compare(password, current.password);
-
-      if (match) {
-        return res.status(400).json({ error: "Password must be different" });
-      }
-
-      hashedPassword = await bcrypt.hash(password, 12);
-    }
-
-    const updated = await updateUserById(name, email, hashedPassword, userId);
-
-    if (!updated) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    res.status(204).send();
   } catch (err) {
     next(err);
   }
