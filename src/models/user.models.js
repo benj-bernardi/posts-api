@@ -89,3 +89,14 @@ export async function deleteUserById(userId) {
 
   return result.rows[0] ?? null;
 }
+
+export async function createRefreshToken(userId, token, expiresAt) {
+    const result = await pool.query(
+        `INSERT INTO refresh_tokens (user_id, token, expires_at)
+         VALUES ($1, $2, $3)
+         RETURNING *`,
+        [userId, token, expiresAt]
+    );
+
+    return result.rows[0];
+}
