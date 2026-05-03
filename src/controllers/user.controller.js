@@ -1,5 +1,5 @@
-import bcrypt from "bcrypt";
 import { accessToken, refreshToken } from "../utils/generateToken.js";
+import { comparePassword, hashPassword } from "../utils/hashPassword.js";
 
 import {
   findUserById,
@@ -12,7 +12,6 @@ import {
   updateUserById,
   createRefreshToken
 } from "../models/user.models.js";
-import pool from "../database/db.js";
 
 export async function getMe(req, res, next) {
   try {
@@ -60,7 +59,7 @@ export async function registerUser(req, res, next) {
       return res.status(409).json({ error: "Name already registered" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await hashPassword(password);
 
     const user = await createUser(name, email, hashedPassword);
 
@@ -84,7 +83,7 @@ export async function loginUser(req, res, next) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const match = await bcrypt.compare(password, user.password);
+    const match = await comparePassword(password, user.password);
 
     if (!match) {
       return res.status(401).json({ error: "Invalid credentials" });
@@ -100,7 +99,7 @@ export async function loginUser(req, res, next) {
       new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     );
 
-    res.json({
+    res.status(200).json({
       message: "Login successful",
       accessTkn,
       refreshTkn, 
