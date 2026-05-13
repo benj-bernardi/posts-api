@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerUser, loginUser, getMe, updateUser } from "../controllers/user.controller.js";
+import { registerUser, loginUser, getMe } from "../controllers/user.controller.js";
 import { getPosts, createPost, updatePost, deletePost } from "../controllers/posts.controller.js";
 import { createComment, deleteComment } from "../controllers/comments.controller.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
@@ -14,7 +14,6 @@ router.post("/refresh", refreshToken);
 
 // user
 router.get("/me", authMiddleware, getMe);
-router.patch("/me", authMiddleware, updateUser);
 
 // posts
 router.get("/posts", authMiddleware, getPosts);

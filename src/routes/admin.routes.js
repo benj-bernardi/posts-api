@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { getAllUsers, deleteUserByID, DeletePostById } from "../controllers/admin.controller";
-import { authMiddleware } from "../middlewares/authMiddleware";
-import { authorizeRoles } from "../middlewares/roleMiddleware";
+import { getAllUsers, deleteUserByID, DeletePostById } from "../controllers/admin.controller.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
+import { authorizeRoles } from "../middlewares/roleMiddleware.js";
 
 const router = Router();
 
