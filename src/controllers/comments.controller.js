@@ -1,4 +1,4 @@
-import { createCommentDB, findPostById, deleteCommentDB } from "../models/commentModel.js";
+import { createCommentDB, findPostById, deleteCommentDB } from "../models/comments.models.js";
 
 export async function createComment(req, res, next){
     try {
