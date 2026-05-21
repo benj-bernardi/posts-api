@@ -24,6 +24,3 @@ export async function authMiddleware(req, res, next) {
     return res.status(401).json({ error: "Invalid token" });
   }
 }
-
-
-  console.log(process.env.ACCESS_SECRET);
