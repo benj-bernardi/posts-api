@@ -1,5 +1,6 @@
 import { accessToken, refreshToken } from "../utils/generateToken.js";
 import { comparePassword, hashPassword } from "../utils/hashPassword.js";
+import { emailRegex, passwordRegex, nameRegex } from "../utils/validation.js";
 
 import {
   findUserById,
@@ -35,19 +36,15 @@ export async function registerUser(req, res, next) {
       return res.status(400).json({ error: "Name, email and password are required" });
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-    const nameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({ error: "Invalid email format" });
     }
 
-    if (!nameRegex.test(name)) {
+    if (!isValidUsername(name)) {
       return res.status(400).json({ error: "Invalid username format" });
     }
 
-    if (!passwordRegex.test(password)) {
+    if (!isValidPassword(password)) {
       return res.status(400).json({ error: "Weak password" });
     }
 
