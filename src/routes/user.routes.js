@@ -4,12 +4,13 @@ import { getPosts, createPost, updatePost, deletePost } from "../controllers/pos
 import { createComment, deleteComment } from "../controllers/comments.controller.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { refreshToken } from "../controllers/refresh.controller.js";
+import { loginLimiter } from "../middlewares/rateLimit.js";
 
 const router = Router();
 
 // auth
 router.post("/register", registerUser);
-router.post("/login", loginUser);
+router.post("/login", loginLimiter, loginUser);
 router.post("/refresh", refreshToken);
 
 // user
