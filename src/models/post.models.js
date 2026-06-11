@@ -52,3 +52,13 @@ export async function deletePostDB(id, user_id) {
 
     return result.rows[0];
 }
+
+// Find post by ID
+export async function findPostById(id) {
+    const result = await pool.query(
+        "SELECT * FROM posts WHERE id = $1",
+        [id]
+    );
+
+    return result.rows[0];
+}
