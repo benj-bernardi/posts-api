@@ -1,5 +1,4 @@
-import { getUsers, deleteUser } from "../models/admin.models.js";
-import { deletePost } from "../models/admin.models.js";
+import { getUsers, deleteUser, deletePost } from "../models/admin.models.js";
 
 export async function getAllUsers(req, res, next){
     try {
