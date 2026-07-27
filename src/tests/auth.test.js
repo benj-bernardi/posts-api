@@ -15,7 +15,20 @@ describe("Auth", () => {
         expect(res.body).toHaveProperty("error");
     });
 
-    afterAll(async () => {
+describe("Register", () => {
+    it("should reject invalid email", async () => {
+        const res = await request(app)
+        .post("/users/register")
+        .send({
+            name: "fakeName12345",
+            email: "fake@test.com",
+            password: "passworD1234"
+        });
+    });
+});
+
+
+afterAll(async () => {
         await pool.end();
     });
 });
