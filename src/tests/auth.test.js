@@ -14,6 +14,7 @@ describe("Auth", () => {
         expect(res.statusCode).toBe(401);
         expect(res.body).toHaveProperty("error");
     });
+});
 
 describe("Register", () => {
     it("should reject invalid email", async () => {
@@ -25,10 +26,18 @@ describe("Register", () => {
             password: "passworD1234"
         });
     });
-});
 
+    it("should reject invalid username", async () => {
+        const res = await request(app)
+        .post("/users/register")
+        .send({ 
+            name: "fakename",
+            email: "fake@email.com",
+            password: "passworD1234"
+        });
+    });
+});
 
 afterAll(async () => {
         await pool.end();
-    });
 });
