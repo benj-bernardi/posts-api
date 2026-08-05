@@ -1,6 +1,6 @@
 import { accessToken, refreshToken } from "../utils/generateToken.js";
 import { comparePassword, hashPassword } from "../utils/hashPassword.js";
-import { emailRegex, passwordRegex, usernameRegex } from "../utils/regexValidation.js";
+import { emailRegex, passwordRegex, usernameRegex, isValidEmail, isValidPassword, isValidUsername } from "../utils/regexValidation.js";
 
 import {
   findUserById,
