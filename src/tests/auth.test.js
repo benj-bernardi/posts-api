@@ -1,6 +1,7 @@
 import request from "supertest";
 import app from "../app.js";
 import pool from "../database/db.js";
+import { email } from "zod";
 
 describe("Auth", () => {
     it("should reject invalid login", async () => {
@@ -36,8 +37,18 @@ describe("Register", () => {
             password: "passworD1234"
         });
     });
+
+    it("should reject invalid password", async() => { 
+        const res = await request(app)
+        .post("/users/register")
+        .send({
+            name: "fakeName12345",
+            email: "fake@email.com",
+            password: "password"
+        });
+    });
 });
 
 afterAll(async () => {
-        await pool.end();
+    await pool.end();
 });
