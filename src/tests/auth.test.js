@@ -1,7 +1,6 @@
 import request from "supertest";
 import app from "../app.js";
 import pool from "../database/db.js";
-import { email } from "zod";
 
 describe("Auth", () => {
     it("should reject invalid login", async () => {
