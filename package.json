@@ -25,7 +25,10 @@
     "express-rate-limit": "^8.7.5",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.23.1",
-    "ratelimit": "^0.0.4",
+    "ratelimit": "^0.0.4"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
     "supertest": "^7.3.2"
   }
 }
