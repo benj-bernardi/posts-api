@@ -1,0 +1,29 @@
+{
+  "name": "posts-api",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "",
+    "dev": "node /src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benj-bernardi/posts-api.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/benj-bernardi/posts-api/issues"
+  },
+  "homepage": "https://github.com/benj-bernardi/posts-api#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^18.0.10",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.23.1",
+    "ratelimit": "^0.0.4",
+    "supertest": "^7.3.2"
+  }
+}
