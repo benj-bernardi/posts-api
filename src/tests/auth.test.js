@@ -14,6 +14,15 @@ describe("Auth", () => {
         expect(res.statusCode).toBe(401);
         expect(res.body).toHaveProperty("error");
     });
+
+    it("should reject invalid login by missing fields", async () => {
+        const res = await request(app)
+        .post("/users/login")
+        .send({});
+
+        expect(res.statusCode).toBe(400);
+        expect(res.body).toHaveProperty("error");
+    });
 });
 
 describe("Register", () => {
