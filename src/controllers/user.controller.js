@@ -73,6 +73,9 @@ export async function loginUser(req, res, next) {
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }
+    
+    if (!isValidEmail(email))
+      return res.status(400).json({ error: "Invalid email format" });
 
     const user = await findUserByEmail(email);
 
